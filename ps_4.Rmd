@@ -7,7 +7,7 @@ output: html_document
 
 ```{r setup, include=FALSE, echo=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
-#set up libraries
+#load libraries
 library(tidyverse)
 library(dplyr)
 library(broom)
@@ -92,9 +92,11 @@ x %>%
   race_eth != "[DO NOT READ] Don't know/Refused") %>% 
   mutate(race_eth = fct_relevel(race_eth, c("White", "Black", "Hispanic", "Asian","Other"))) %>% 
   group_by(response, race_eth) %>% 
+  
   #calculated and mutated data to incorporate final weight
   summarize(total = sum(final_weight)) %>%
-  #spreead the data to get parties
+  
+  #spread the data to get parties
   spread(key = response, value = total, fill = 0) %>%
   ungroup() %>% 
   mutate(all = Dem + Rep + Und + `3`) %>% 
@@ -102,31 +104,42 @@ x %>%
   mutate(Rep = Rep/all) %>%
   mutate(Und = Und/all) %>% 
   select(-all, -`3`) %>% 
+  
+  #make na values 0 so that table isn't messed up
   na_if(0) %>% 
+  
   #set up graph, labels, formatting by percent and missing values
   gt() %>% 
     tab_header(title = "Polling Results in North Carolina's 9th Congressional District") %>% 
     cols_label(race_eth = "Race", Dem = "DEM.",Rep = "REP.",Und = "UND.") %>%
     fmt_percent(columns = vars(Dem, Rep, Und),decimals = 0) %>% 
-    fmt_missing(columns = 4, rows = 4, missing_text = "-")
+    fmt_missing(columns = 4, rows = 4, missing_text = "-") 
 
 ```
 
 ## Question #3
 ```{r 3, echo=FALSE}
-#filter different education levels than relevel
+#filter different education levels than reorder the data by education
 x %>% 
   filter(educ %in% c("Bachelors' degree", "Grade school", "Graduate or Professional Degree", "High school", "Some college or trade school")) %>% 
   mutate(educ = fct_relevel(educ, c("Grade school", "High school", "Some college or trade school", "Bachelors' degree", "Graduate or Professional Degree"))) %>% 
 group_by(educ) %>% 
-#set up plot, style
-ggplot(aes(x = educ, y = final_weight)) + coord_flip() + geom_violin() + geom_jitter(alpha = .5) + theme_gray()+ 
-labs(title = "More Educated Matter Less in North Carolina 9th", 
-     subtitle = "Poll gives more weight to people who are less likely to participate in polls", 
-     caption = "Source: New York Times Upshot/Siena College 2018 live poll results") +
-xlab(element_blank()) +
-ylab("Weight Given to Respondent in Calculating Poll Results") + 
-scale_color_economist() 
+
+  #set up plot
+  ggplot(aes(x = educ, y = final_weight)) + 
+  coord_flip() + 
+  #gets the violin shape
+  geom_violin() + 
+  
+  #gets the dots shown
+  geom_jitter(alpha = .5) + 
+  theme_gray()+ 
+  # style plot
+  labs(title = "More Educated Matter Less in North Carolina 9th", 
+       subtitle = "Poll gives more weight to people who are less likely to participate in polls", 
+       caption = "Source: New York Times Upshot/Siena College 2018 live poll results") +
+  xlab(element_blank()) +
+  ylab("Weight Given to Respondent in Calculating Poll Results")
 
 ```
 
@@ -139,27 +152,32 @@ x %>%
   mutate(educ = fct_relevel(educ, c("Grade school", "High school", "Some college or trade school", "Bachelors' degree", "Graduate or Professional Degree"))) %>%
   group_by(response, educ) %>% 
   summarize(total = sum(final_weight)) %>%
+  
   #spread to find percents relative to total dems and reps in sample
   spread(key = response, value = total, fill = 0) %>%
   ungroup() %>% 
   mutate(all = Dem + Rep) %>% 
   mutate(Dem = Dem/all) %>% 
   mutate(Rep = Rep/all) %>%
-  ##basically reversing the spread so I can facet wrap. 
+  
+  #basically reversing the spread so I can facet wrap. 
   gather(key = response, value = value, -educ) %>% 
   filter(response %in% c("Dem", "Rep")) %>% 
-  #set up graph
-  ggplot(aes(fill = response, x = educ, y = value)) + geom_col(position = "dodge2") +
-  facet_wrap(~response) %>% 
-  labs(title = "% of North Carolina District 9 Polled Voters Education by Party", caption = "Theme: economist theme package, Data: Source: New York Times Upshot/Siena College") + 
-  xlab(element_blank()) +
-  ylab("Percentage") +
-  theme_economist() +
-  #changing x tick size
-  theme(axis.text.x = element_text(size=7)) +
-  scale_color_economist() +
-  #recoloring so it matches Dem=blue, Rep=Red
-  scale_fill_manual(values=c("blue", "red"))
+  
+  #set up graph, dodge 2 makes it a stacked bar graph.
+  ggplot(aes(fill = response, x = educ, y = value)) + 
+    geom_col(position = "dodge2") +
+    facet_wrap(~response) %>% 
+    labs(title = "% of North Carolina District 9 Polled Voters Education by Party", 
+         caption = "Theme: economist theme package, Data: Source: New York Times Upshot/Siena College") + 
+    xlab(element_blank()) +
+    ylab("Percentage") +
+    theme_economist() +
+    #changing x tick size
+    theme(axis.text.x = element_text(size=7)) +
+    scale_color_economist() +
+    #recoloring so it matches Dem=blue, Rep=Red
+    scale_fill_manual(values=c("blue", "red"))
 
 ```
 
